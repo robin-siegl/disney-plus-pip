@@ -1,12 +1,12 @@
 {
   "name": "disney-plus-pip",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Picture-in-Picture controls for the Disney+ web player.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/check-built-javascript.mjs",
     "package": "npm run build && node scripts/package-extension.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

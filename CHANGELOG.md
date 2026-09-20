@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-09-20
+
+### Fixed
+
+- Generate valid content-script bundles by preventing the source-map comment from swallowing CRXJS's closing wrapper.
+- Validate the syntax of every generated JavaScript file during each build.
+
 ## [1.0.1] - 2026-09-20
 
 ### Fixed
