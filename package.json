@@ -1,6 +1,6 @@
 {
   "name": "disney-plus-pip",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "Picture-in-Picture controls for the Disney+ web player.",
