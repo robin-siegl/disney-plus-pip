@@ -18,6 +18,15 @@ export function findVideos(): HTMLVideoElement[] {
   return collectOpenRoots().flatMap((root) => [...root.querySelectorAll('video')]);
 }
 
+export function findPlayer(): HTMLElement | null {
+  for (const root of collectOpenRoots()) {
+    const player = root.querySelector<HTMLElement>(PLAYER_SELECTOR);
+    if (player) return player;
+  }
+
+  return null;
+}
+
 function getMetrics(video: HTMLVideoElement): VideoCandidateMetrics {
   const rect = video.getBoundingClientRect();
   const style = getComputedStyle(video);
@@ -46,10 +55,11 @@ export function enablePictureInPicture(video: HTMLVideoElement): void {
   video.disablePictureInPicture = false;
 }
 
-export function getPlayerHost(): HTMLElement {
+export function getOverlayParent(): HTMLElement | ShadowRoot {
   const fullscreenElement = document.fullscreenElement;
-  if (fullscreenElement instanceof HTMLElement) return fullscreenElement;
+  if (fullscreenElement instanceof HTMLElement) {
+    return fullscreenElement.shadowRoot ?? fullscreenElement;
+  }
 
-  const player = document.querySelector<HTMLElement>(PLAYER_SELECTOR);
-  return player ?? document.body;
+  return document.documentElement;
 }

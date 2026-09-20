@@ -1,4 +1,3 @@
-import './styles.css';
 import { PictureInPictureController } from './pip-controller';
 
 const controller = new PictureInPictureController();

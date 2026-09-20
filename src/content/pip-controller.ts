@@ -1,11 +1,20 @@
-import { enablePictureInPicture, findActiveVideo, getPlayerHost } from '../disney/player';
+import {
+  enablePictureInPicture,
+  findActiveVideo,
+  findPlayer,
+  getOverlayParent,
+} from '../disney/player';
 import { exitPipIcon, pipIcon } from './icons';
+import overlayStyles from './styles.css?inline';
 
+const ROOT_ID = 'disney-plus-pip-root';
 const BUTTON_ID = 'disney-plus-pip-button';
 const TOAST_ID = 'disney-plus-pip-toast';
 const SCAN_INTERVAL_MS = 1_000;
 
 export class PictureInPictureController {
+  private root: HTMLDivElement | null = null;
+  private shadowRoot: ShadowRoot | null = null;
   private button: HTMLButtonElement | null = null;
   private currentVideo: HTMLVideoElement | null = null;
   private toastTimer: number | null = null;
@@ -33,8 +42,7 @@ export class PictureInPictureController {
     this.observer.disconnect();
     document.removeEventListener('fullscreenchange', this.fullscreenHandler);
     this.bindVideo(null);
-    this.button?.remove();
-    document.getElementById(TOAST_ID)?.remove();
+    this.removeOverlay();
 
     if (this.scanTimer !== null) window.clearTimeout(this.scanTimer);
     if (this.scanInterval !== null) window.clearInterval(this.scanInterval);
@@ -69,15 +77,17 @@ export class PictureInPictureController {
 
   private scan(): void {
     const video = findActiveVideo();
-    if (!video) {
+    const player = findPlayer();
+
+    if (!video && !player && !document.pictureInPictureElement) {
       this.bindVideo(null);
-      this.button?.remove();
+      this.removeOverlay();
       return;
     }
 
     this.bindVideo(video);
-    enablePictureInPicture(video);
-    this.placeButton();
+    if (video) enablePictureInPicture(video);
+    this.placeOverlay();
     this.updateButton();
   }
 
@@ -111,10 +121,38 @@ export class PictureInPictureController {
     return button;
   }
 
-  private placeButton(): void {
-    this.button ??= this.createButton();
-    const host = getPlayerHost();
-    if (this.button.parentNode !== host) host.appendChild(this.button);
+  private createOverlay(): void {
+    const root = document.createElement('div');
+    root.id = ROOT_ID;
+    root.setAttribute('data-disney-plus-pip-root', '');
+
+    const shadowRoot = root.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = overlayStyles;
+
+    const button = this.createButton();
+    shadowRoot.append(style, button);
+
+    this.root = root;
+    this.shadowRoot = shadowRoot;
+    this.button = button;
+  }
+
+  private placeOverlay(): void {
+    if (!this.root) this.createOverlay();
+
+    const root = this.root;
+    if (!root) return;
+
+    const parent = getOverlayParent();
+    if (root.parentNode !== parent) parent.appendChild(root);
+  }
+
+  private removeOverlay(): void {
+    this.root?.remove();
+    this.root = null;
+    this.shadowRoot = null;
+    this.button = null;
   }
 
   private updateButton(): void {
@@ -133,13 +171,15 @@ export class PictureInPictureController {
   }
 
   private showToast(message: string): void {
-    let toast = document.getElementById(TOAST_ID);
+    this.placeOverlay();
+
+    let toast = this.shadowRoot?.getElementById(TOAST_ID);
     if (!toast) {
       toast = document.createElement('div');
       toast.id = TOAST_ID;
       toast.setAttribute('role', 'status');
       toast.setAttribute('aria-live', 'polite');
-      document.body.appendChild(toast);
+      this.shadowRoot?.appendChild(toast);
     }
 
     toast.textContent = message;

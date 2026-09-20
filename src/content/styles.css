@@ -1,8 +1,18 @@
+:host {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: block;
+  pointer-events: none;
+}
+
 #disney-plus-pip-button {
+  all: unset;
   position: fixed;
   right: 22px;
   bottom: 82px;
-  z-index: 2147483647;
+  z-index: 1;
   display: grid;
   width: 48px;
   height: 48px;
@@ -15,6 +25,7 @@
   box-shadow: 0 5px 20px rgb(0 0 0 / 38%);
   cursor: pointer;
   opacity: 0.78;
+  pointer-events: auto;
   transition:
     opacity 140ms ease,
     transform 140ms ease,
