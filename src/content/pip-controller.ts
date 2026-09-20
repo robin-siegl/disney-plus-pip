@@ -1,10 +1,4 @@
-import {
-  enablePictureInPicture,
-  findActiveVideo,
-  findPlayer,
-  getOverlayParent,
-} from '../disney/player';
-import { exitPipIcon, pipIcon } from './icons';
+import { enablePictureInPicture, findActiveVideo, getOverlayParent } from '../disney/player';
 import overlayStyles from './styles.css?inline';
 
 const ROOT_ID = 'disney-plus-pip-root';
@@ -26,6 +20,11 @@ export class PictureInPictureController {
   private readonly fullscreenHandler = (): void => this.scheduleScan();
 
   start(): void {
+    // Disney+ creates and replaces the player asynchronously. The control must
+    // not depend on player discovery or it can remain absent indefinitely.
+    this.placeOverlay();
+    this.updateButton();
+
     this.observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
@@ -77,13 +76,6 @@ export class PictureInPictureController {
 
   private scan(): void {
     const video = findActiveVideo();
-    const player = findPlayer();
-
-    if (!video && !player && !document.pictureInPictureElement) {
-      this.bindVideo(null);
-      this.removeOverlay();
-      return;
-    }
 
     this.bindVideo(video);
     if (video) enablePictureInPicture(video);
@@ -113,6 +105,31 @@ export class PictureInPictureController {
     const button = document.createElement('button');
     button.id = BUTTON_ID;
     button.type = 'button';
+    button.textContent = 'PiP';
+    button.style.cssText = [
+      'all: initial !important',
+      'position: fixed !important',
+      'right: 22px !important',
+      'bottom: 82px !important',
+      'z-index: 2147483647 !important',
+      'display: grid !important',
+      'place-items: center !important',
+      'box-sizing: border-box !important',
+      'min-width: 58px !important',
+      'height: 44px !important',
+      'padding: 0 14px !important',
+      'border: 1px solid rgb(255 255 255 / 35%) !important',
+      'border-radius: 22px !important',
+      'background: rgb(12 16 31 / 96%) !important',
+      'color: white !important',
+      'box-shadow: 0 5px 20px rgb(0 0 0 / 55%) !important',
+      'font: 700 14px/1 Arial, sans-serif !important',
+      'letter-spacing: .04em !important',
+      'cursor: pointer !important',
+      'opacity: 1 !important',
+      'visibility: visible !important',
+      'pointer-events: auto !important',
+    ].join(';');
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -125,6 +142,15 @@ export class PictureInPictureController {
     const root = document.createElement('div');
     root.id = ROOT_ID;
     root.setAttribute('data-disney-plus-pip-root', '');
+    root.style.cssText = [
+      'all: initial !important',
+      'position: fixed !important',
+      'inset: 0 !important',
+      'z-index: 2147483647 !important',
+      'display: block !important',
+      'visibility: visible !important',
+      'pointer-events: none !important',
+    ].join(';');
 
     const shadowRoot = root.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
@@ -164,7 +190,7 @@ export class PictureInPictureController {
 
     const label = isActive ? 'Exit Picture in Picture' : 'Open Picture in Picture';
     this.button.dataset.state = state;
-    this.button.innerHTML = isActive ? exitPipIcon : pipIcon;
+    this.button.textContent = isActive ? 'Exit PiP' : 'PiP';
     this.button.setAttribute('aria-label', label);
     this.button.title = label;
     this.button.classList.toggle('is-active', isActive);
