@@ -5,6 +5,8 @@ const ROOT_ID = 'disney-plus-pip-root';
 const BUTTON_ID = 'disney-plus-pip-button';
 const TOAST_ID = 'disney-plus-pip-toast';
 const SCAN_INTERVAL_MS = 1_000;
+const PLAYER_EDGE_OFFSET = 20;
+const BUTTON_SIZE = 44;
 
 export class PictureInPictureController {
   private root: HTMLDivElement | null = null;
@@ -18,6 +20,7 @@ export class PictureInPictureController {
   private readonly observer = new MutationObserver(() => this.scheduleScan());
   private readonly updateButtonHandler = (): void => this.updateButton();
   private readonly fullscreenHandler = (): void => this.scheduleScan();
+  private readonly resizeHandler = (): void => this.scheduleScan();
 
   start(): void {
     // Disney+ creates and replaces the player asynchronously. The control must
@@ -33,6 +36,7 @@ export class PictureInPictureController {
     });
 
     document.addEventListener('fullscreenchange', this.fullscreenHandler);
+    window.addEventListener('resize', this.resizeHandler);
     this.scan();
     this.scanInterval = window.setInterval(() => this.scan(), SCAN_INTERVAL_MS);
   }
@@ -40,6 +44,7 @@ export class PictureInPictureController {
   stop(): void {
     this.observer.disconnect();
     document.removeEventListener('fullscreenchange', this.fullscreenHandler);
+    window.removeEventListener('resize', this.resizeHandler);
     this.bindVideo(null);
     this.removeOverlay();
 
@@ -80,6 +85,7 @@ export class PictureInPictureController {
     this.bindVideo(video);
     if (video) enablePictureInPicture(video);
     this.placeOverlay();
+    this.positionButton(video);
     this.updateButton();
   }
 
@@ -105,37 +111,50 @@ export class PictureInPictureController {
     const button = document.createElement('button');
     button.id = BUTTON_ID;
     button.type = 'button';
-    button.textContent = 'PiP';
-    button.style.cssText = [
-      'all: initial !important',
-      'position: fixed !important',
-      'right: 22px !important',
-      'bottom: 82px !important',
-      'z-index: 2147483647 !important',
-      'display: grid !important',
-      'place-items: center !important',
-      'box-sizing: border-box !important',
-      'min-width: 58px !important',
-      'height: 44px !important',
-      'padding: 0 14px !important',
-      'border: 1px solid rgb(255 255 255 / 35%) !important',
-      'border-radius: 22px !important',
-      'background: rgb(12 16 31 / 96%) !important',
-      'color: white !important',
-      'box-shadow: 0 5px 20px rgb(0 0 0 / 55%) !important',
-      'font: 700 14px/1 Arial, sans-serif !important',
-      'letter-spacing: .04em !important',
-      'cursor: pointer !important',
-      'opacity: 1 !important',
-      'visibility: visible !important',
-      'pointer-events: auto !important',
-    ].join(';');
+    button.appendChild(this.createPipIcon());
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
       void this.toggle();
     });
     return button;
+  }
+
+  private createPipIcon(): SVGSVGElement {
+    const namespace = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(namespace, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const path = document.createElementNS(namespace, 'path');
+    path.setAttribute(
+      'd',
+      'M19 7H5v10h7v2H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v5h-2V7Zm-5 5h8v7h-8v-7Z',
+    );
+    svg.appendChild(path);
+    return svg;
+  }
+
+  private positionButton(video: HTMLVideoElement | null): void {
+    if (!this.button) return;
+
+    if (!video) {
+      this.button.style.setProperty('top', `${PLAYER_EDGE_OFFSET}px`, 'important');
+      this.button.style.setProperty('right', `${PLAYER_EDGE_OFFSET}px`, 'important');
+      this.button.style.removeProperty('left');
+      return;
+    }
+
+    const rect = video.getBoundingClientRect();
+    const top = Math.max(12, rect.top + PLAYER_EDGE_OFFSET);
+    const left = Math.min(
+      window.innerWidth - BUTTON_SIZE - 12,
+      rect.right - BUTTON_SIZE - PLAYER_EDGE_OFFSET,
+    );
+
+    this.button.style.setProperty('top', `${top}px`, 'important');
+    this.button.style.setProperty('left', `${Math.max(12, left)}px`, 'important');
+    this.button.style.setProperty('right', 'auto', 'important');
   }
 
   private createOverlay(): void {
@@ -190,8 +209,8 @@ export class PictureInPictureController {
 
     const label = isActive ? 'Exit Picture in Picture' : 'Open Picture in Picture';
     this.button.dataset.state = state;
-    this.button.textContent = isActive ? 'Exit PiP' : 'PiP';
     this.button.setAttribute('aria-label', label);
+    this.button.setAttribute('aria-pressed', String(isActive));
     this.button.title = label;
     this.button.classList.toggle('is-active', isActive);
   }

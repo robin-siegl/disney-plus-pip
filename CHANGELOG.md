@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-09-20
+
+### Changed
+
+- Restyle the PiP button to match Disney+'s compact video controls.
+- Position the button inside the video's top-right corner instead of over the bottom controls.
+
 ## [1.0.2] - 2026-09-20
 
 ### Fixed
